@@ -2,6 +2,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+report/__pycache__/
+report/.~lock*
+report/build_log.txt
 
 data/
 results/

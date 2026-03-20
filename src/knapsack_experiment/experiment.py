@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -9,6 +10,7 @@ from .evaluation import compute_selection_metrics
 from .hotpot import load_merged_jsonl
 from .solvers import solve_by_name, solve_exact_dp
 from .utility import compute_utilities
+from .utility_cache import build_cache_path, load_utility_cache, save_utility_cache
 
 
 def _scale_costs(costs: list[int], budget: int, divisor: int) -> tuple[list[int], int]:
@@ -37,6 +39,16 @@ def run_algorithm_experiment(
     if max_instances is not None:
         instances = instances[:max_instances]
 
+    cache_path = build_cache_path(
+        merged_dataset_path=merged_dataset_path,
+        utility_method=utility_method,
+        semantic_model_name=semantic_model_name,
+        alpha=utility_alpha,
+        beta=utility_beta,
+    )
+    utility_cache = load_utility_cache(cache_path)
+    cache_dirty = False
+
     records: list[dict[str, Any]] = []
     run_meta: dict[str, Any] = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -52,6 +64,7 @@ def run_algorithm_experiment(
         "local_search_iterations": local_search_iterations,
         "local_search_candidate_pool": local_search_candidate_pool,
         "merged_dataset_path": merged_dataset_path,
+        "utility_cache_path": cache_path,
     }
 
     for instance in instances:
@@ -59,14 +72,19 @@ def run_algorithm_experiment(
         raw_costs = [chunk.token_cost for chunk in instance.chunks]
         support_flags = [chunk.is_gold_support for chunk in instance.chunks]
 
-        utilities = compute_utilities(
-            query=instance.question,
-            chunks=texts,
-            method=utility_method,
-            semantic_model_name=semantic_model_name,
-            alpha=utility_alpha,
-            beta=utility_beta,
-        )
+        if instance.merged_id in utility_cache:
+            utilities = utility_cache[instance.merged_id]
+        else:
+            utilities = compute_utilities(
+                query=instance.question,
+                chunks=texts,
+                method=utility_method,
+                semantic_model_name=semantic_model_name,
+                alpha=utility_alpha,
+                beta=utility_beta,
+            )
+            utility_cache[instance.merged_id] = utilities
+            cache_dirty = True
 
         for budget in budgets:
             if algorithm == "exact_dp":
@@ -126,5 +144,19 @@ def run_algorithm_experiment(
                 record["optimality_gap"] = gap
 
             records.append(record)
+
+    if cache_dirty:
+        save_utility_cache(
+            path=cache_path,
+            entries=utility_cache,
+            metadata={
+                "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                "merged_dataset_path": os.path.abspath(merged_dataset_path),
+                "utility_method": utility_method,
+                "semantic_model_name": semantic_model_name,
+                "utility_alpha": utility_alpha,
+                "utility_beta": utility_beta,
+            },
+        )
 
     return records, run_meta

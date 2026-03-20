@@ -153,7 +153,18 @@ results/
 
 This gives you clean separation for per-algorithm analysis and plotting.
 
-## 7) Metrics Computed
+## 7) Utility Caching
+
+Utility scores are now cached automatically by:
+
+- merged dataset file
+- utility method
+- semantic model name
+- hybrid weights
+
+That means if you run `exact_dp`, then later run `greedy_ratio` and `greedy_refine` with the same dataset and utility setup, the utility scores are reused instead of recomputed. Cache files are stored under `data/cache/`.
+
+## 8) Metrics Computed
 
 Per instance and budget:
 
@@ -168,7 +179,7 @@ Per instance and budget:
 
 Aggregated in `summary.csv` by `(merge_size, budget_tokens)`.
 
-## 8) Utility Methods
+## 9) Utility Methods
 
 - `lexical`:
   lightweight TF-IDF-style query/chunk relevance (default, no extra deps)
@@ -178,7 +189,7 @@ Aggregated in `summary.csv` by `(merge_size, budget_tokens)`.
   `alpha * semantic + beta * lexical`
   (falls back to lexical if semantic dependency is unavailable)
 
-## 9) Notes for Class Project Use
+## 10) Notes for Class Project Use
 
 - `distractor` split is used intentionally so gold evidence exists in context.
 - Sentence chunking is implemented with period-based sub-splitting (`--chunking-mode period`).
