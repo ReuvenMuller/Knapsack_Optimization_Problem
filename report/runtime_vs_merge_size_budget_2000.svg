@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="450.0" y="30" text-anchor="middle" font-family="Segoe UI, Arial" font-size="22" fill="#1f2937">Runtime vs Merge Size (Budget = 2000)</text>
+<line x1="80" y1="440" x2="860" y2="440" stroke="#374151" stroke-width="2"/>
+<line x1="80" y1="440" x2="80" y2="60" stroke="#374151" stroke-width="2"/>
+<line x1="80" y1="440.0" x2="860" y2="440.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="444.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.000</text>
+<line x1="80" y1="364.0" x2="860" y2="364.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="368.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.116</text>
+<line x1="80" y1="288.0" x2="860" y2="288.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="292.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.231</text>
+<line x1="80" y1="212.0" x2="860" y2="212.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="216.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.347</text>
+<line x1="80" y1="136.0" x2="860" y2="136.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="140.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.463</text>
+<line x1="80" y1="60.0" x2="860" y2="60.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="70" y="64.0" text-anchor="end" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">0.578</text>
+<line x1="80.0" y1="440" x2="80.0" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+<text x="80.0" y="464" text-anchor="middle" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">10</text>
+<line x1="275.0" y1="440" x2="275.0" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+<text x="275.0" y="464" text-anchor="middle" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">20</text>
+<line x1="470.0" y1="440" x2="470.0" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+<text x="470.0" y="464" text-anchor="middle" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">30</text>
+<line x1="665.0" y1="440" x2="665.0" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+<text x="665.0" y="464" text-anchor="middle" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">40</text>
+<line x1="860.0" y1="440" x2="860.0" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+<text x="860.0" y="464" text-anchor="middle" font-family="Segoe UI, Arial" font-size="12" fill="#4b5563">50</text>
+<path d="M 80.00 360.50 L 275.00 281.08 L 470.00 220.89 L 665.00 128.12 L 860.00 109.57" fill="none" stroke="#0B5D8C" stroke-width="3"/>
+<circle cx="80.00" cy="360.50" r="4" fill="#0B5D8C"/>
+<circle cx="275.00" cy="281.08" r="4" fill="#0B5D8C"/>
+<circle cx="470.00" cy="220.89" r="4" fill="#0B5D8C"/>
+<circle cx="665.00" cy="128.12" r="4" fill="#0B5D8C"/>
+<circle cx="860.00" cy="109.57" r="4" fill="#0B5D8C"/>
+<line x1="670" y1="70" x2="694" y2="70" stroke="#0B5D8C" stroke-width="3"/>
+<text x="702" y="74" font-family="Segoe UI, Arial" font-size="13" fill="#1f2937">exact_dp</text>
+<path d="M 80.00 439.80 L 275.00 439.58 L 470.00 439.30 L 665.00 439.03 L 860.00 438.70" fill="none" stroke="#2C9A5F" stroke-width="3"/>
+<circle cx="80.00" cy="439.80" r="4" fill="#2C9A5F"/>
+<circle cx="275.00" cy="439.58" r="4" fill="#2C9A5F"/>
+<circle cx="470.00" cy="439.30" r="4" fill="#2C9A5F"/>
+<circle cx="665.00" cy="439.03" r="4" fill="#2C9A5F"/>
+<circle cx="860.00" cy="438.70" r="4" fill="#2C9A5F"/>
+<line x1="670" y1="92" x2="694" y2="92" stroke="#2C9A5F" stroke-width="3"/>
+<text x="702" y="96" font-family="Segoe UI, Arial" font-size="13" fill="#1f2937">greedy_ratio</text>
+<path d="M 80.00 436.11 L 275.00 436.03 L 470.00 436.01 L 665.00 435.53 L 860.00 435.08" fill="none" stroke="#C06C2B" stroke-width="3"/>
+<circle cx="80.00" cy="436.11" r="4" fill="#C06C2B"/>
+<circle cx="275.00" cy="436.03" r="4" fill="#C06C2B"/>
+<circle cx="470.00" cy="436.01" r="4" fill="#C06C2B"/>
+<circle cx="665.00" cy="435.53" r="4" fill="#C06C2B"/>
+<circle cx="860.00" cy="435.08" r="4" fill="#C06C2B"/>
+<line x1="670" y1="114" x2="694" y2="114" stroke="#C06C2B" stroke-width="3"/>
+<text x="702" y="118" font-family="Segoe UI, Arial" font-size="13" fill="#1f2937">greedy_refine</text>
+<text x="450.0" y="500" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#1f2937">Merge Size</text>
+<text x="20" y="260.0" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#1f2937" transform="rotate(-90 20 260.0)">Average Runtime (seconds)</text>
+</svg>
