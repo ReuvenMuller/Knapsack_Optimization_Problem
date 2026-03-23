@@ -1,29 +1,35 @@
+"""
+Utility methods:
+- lexical: TF/IDF
+- semantic: embedding similarity
+- hybrid: pct_semantic * semantic + (1-pct_semantic) * lexical
+"""
+
+from __future__ import annotations
+
 import math
 import re
+import numpy as np
 from collections import Counter
+from sentence_transformers import SentenceTransformer
 
+_split_tokens = re.compile(r"[A-Za-z0-9]+", re.UNICODE)
 
-_WORD_PATTERN = re.compile(r"[A-Za-z0-9]+", re.UNICODE)
-
-
-def _normalize(values):
+def _normalize(values: list[float]) -> list[float]:
     if not values:
         return []
     v_min = min(values)
     v_max = max(values)
-    if abs(v_max - v_min) < 1e-12:
+    if abs(v_max - v_min) < 1e-10:
         return [1.0 for _ in values]
     return [(v - v_min) / (v_max - v_min) for v in values]
 
 
-def _tokenize(text):
-    return [token.lower() for token in _WORD_PATTERN.findall(text)]
+def _tokenize(text: str) -> list[str]:
+    return [token.lower() for token in _split_tokens.findall(text)]
 
-
-def lexical_tfidf_scores(query, chunks):
-    """
-    Lightweight TF-IDF cosine proxy without external dependencies.
-    """
+# lexical - tf_idf
+def lexical(query: str, chunks: list[str]) -> list[float]:
     if not chunks:
         return []
 
@@ -31,46 +37,33 @@ def lexical_tfidf_scores(query, chunks):
     query_tf = Counter(query_tokens)
 
     chunk_tokens = [_tokenize(chunk) for chunk in chunks]
-    doc_freq = Counter()
+    doc_freq: Counter[str] = Counter()
     for tokens in chunk_tokens:
         doc_freq.update(set(tokens))
 
-    n_docs = len(chunks)
-    scores = []
+    N = len(chunks)
+    scores: list[float] = []
     for tokens in chunk_tokens:
         tf = Counter(tokens)
         score = 0.0
         for term, q_count in query_tf.items():
             if term not in tf:
                 continue
-            idf = math.log((n_docs + 1) / (doc_freq[term] + 1)) + 1.0
+            idf = np.log((N + 1) / (doc_freq[term] + 1)) + 1.0
             score += (q_count * idf) * (tf[term] * idf)
         scores.append(score)
 
     return _normalize(scores)
 
 
-def semantic_embedding_scores(
-    query,
-    chunks,
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-):
-    """
-    Sentence-transformer embedding cosine scores.
+def semantic(
+    query: str,
+    chunks: list[str],
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+) -> list[float]:
 
-    Requires optional dependency:
-      pip install sentence-transformers
-    """
     if not chunks:
         return []
-
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError as exc:
-        raise RuntimeError(
-            "Missing dependency 'sentence-transformers'. Install with: "
-            "pip install sentence-transformers"
-        ) from exc
 
     model = SentenceTransformer(model_name)
     query_vec = model.encode([query], normalize_embeddings=True)[0]
@@ -78,38 +71,27 @@ def semantic_embedding_scores(
 
     scores = []
     for vec in chunk_vecs:
-        # Dot product == cosine because vectors are normalized.
-        score = float(sum(a * b for a, b in zip(query_vec, vec)))
+        score = np.dot(query_vec,vec)
         scores.append(score)
     return _normalize(scores)
 
-
 def compute_utilities(
-    query,
-    chunks,
-    method="lexical",
-    semantic_model_name="sentence-transformers/all-MiniLM-L6-v2",
-    alpha=0.7,
-    beta=0.3,
-):
-    """
-    Utility methods:
-    - lexical: TF-IDF style lexical relevance
-    - semantic: embedding similarity
-    - hybrid: alpha * semantic + beta * lexical
-    """
+    query: str,
+    chunks: list[str],
+    method: str = "lexical",
+    semantic_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    pct_semantic: float = 0.7,
+    pct_lexical: 1-pct_semantic,
+) -> list[float]:
+
     method = method.lower()
     if method == "lexical":
-        return lexical_tfidf_scores(query, chunks)
+        return lexical(query, chunks)
     if method == "semantic":
-        return semantic_embedding_scores(query, chunks, model_name=semantic_model_name)
+        return semantic(query, chunks, model_name=semantic_model_name)
     if method == "hybrid":
-        lexical = lexical_tfidf_scores(query, chunks)
-        try:
-            semantic = semantic_embedding_scores(query, chunks, model_name=semantic_model_name)
-        except RuntimeError:
-            # Graceful fallback so experiments still run without heavy dependencies.
-            return lexical
-        return [alpha * s + beta * l for s, l in zip(semantic, lexical)]
+        lexical = lexical(query, chunks)
+        semantic = semantic(query, chunks, model_name=semantic_model_name)
+        return [pct_semantic * s + pct_lexical * l for s, l in zip(semantic, lexical)]
 
     raise ValueError(f"Unknown utility method '{method}'")
