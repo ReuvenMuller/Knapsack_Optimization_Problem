@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 import re
 from collections import Counter
@@ -8,7 +6,7 @@ from collections import Counter
 _WORD_PATTERN = re.compile(r"[A-Za-z0-9]+", re.UNICODE)
 
 
-def _normalize(values: list[float]) -> list[float]:
+def _normalize(values):
     if not values:
         return []
     v_min = min(values)
@@ -18,11 +16,11 @@ def _normalize(values: list[float]) -> list[float]:
     return [(v - v_min) / (v_max - v_min) for v in values]
 
 
-def _tokenize(text: str) -> list[str]:
+def _tokenize(text):
     return [token.lower() for token in _WORD_PATTERN.findall(text)]
 
 
-def lexical_tfidf_scores(query: str, chunks: list[str]) -> list[float]:
+def lexical_tfidf_scores(query, chunks):
     """
     Lightweight TF-IDF cosine proxy without external dependencies.
     """
@@ -33,12 +31,12 @@ def lexical_tfidf_scores(query: str, chunks: list[str]) -> list[float]:
     query_tf = Counter(query_tokens)
 
     chunk_tokens = [_tokenize(chunk) for chunk in chunks]
-    doc_freq: Counter[str] = Counter()
+    doc_freq = Counter()
     for tokens in chunk_tokens:
         doc_freq.update(set(tokens))
 
     n_docs = len(chunks)
-    scores: list[float] = []
+    scores = []
     for tokens in chunk_tokens:
         tf = Counter(tokens)
         score = 0.0
@@ -53,10 +51,10 @@ def lexical_tfidf_scores(query: str, chunks: list[str]) -> list[float]:
 
 
 def semantic_embedding_scores(
-    query: str,
-    chunks: list[str],
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-) -> list[float]:
+    query,
+    chunks,
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+):
     """
     Sentence-transformer embedding cosine scores.
 
@@ -87,13 +85,13 @@ def semantic_embedding_scores(
 
 
 def compute_utilities(
-    query: str,
-    chunks: list[str],
-    method: str = "lexical",
-    semantic_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-    alpha: float = 0.7,
-    beta: float = 0.3,
-) -> list[float]:
+    query,
+    chunks,
+    method="lexical",
+    semantic_model_name="sentence-transformers/all-MiniLM-L6-v2",
+    alpha=0.7,
+    beta=0.3,
+):
     """
     Utility methods:
     - lexical: TF-IDF style lexical relevance
