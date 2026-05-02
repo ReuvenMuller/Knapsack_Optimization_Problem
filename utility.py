@@ -2,18 +2,17 @@
 Utility methods:
 - lexical: TF/IDF
 - semantic: embedding similarity
-- hybrid: pct_semantic * semantic + (1-pct_semantic) * lexical
+- hybrid: pct_semantic * semantic + pct_lexical * lexical
 """
 
 from __future__ import annotations
 
-import math
 import re
 import numpy as np
 from collections import Counter
-from sentence_transformers import SentenceTransformer
 
 _split_tokens = re.compile(r"[A-Za-z0-9]+", re.UNICODE)
+_semantic_model_cache = {}
 
 def _normalize(values: list[float]) -> list[float]:
     if not values:
@@ -65,7 +64,12 @@ def semantic(
     if not chunks:
         return []
 
-    model = SentenceTransformer(model_name)
+    if model_name not in _semantic_model_cache:
+        from sentence_transformers import SentenceTransformer
+
+        _semantic_model_cache[model_name] = SentenceTransformer(model_name)
+
+    model = _semantic_model_cache[model_name]
     query_vec = model.encode([query], normalize_embeddings=True)[0]
     chunk_vecs = model.encode(chunks, normalize_embeddings=True)
 
@@ -80,8 +84,8 @@ def compute_utilities(
     chunks: list[str],
     method: str = "lexical",
     semantic_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-    pct_semantic: float = 0.7,
-    pct_lexical: 1-pct_semantic,
+    pct_semantic: float = 0.75,
+    pct_lexical: float = 0.25,
 ) -> list[float]:
 
     method = method.lower()
@@ -90,8 +94,11 @@ def compute_utilities(
     if method == "semantic":
         return semantic(query, chunks, model_name=semantic_model_name)
     if method == "hybrid":
-        lexical = lexical(query, chunks)
-        semantic = semantic(query, chunks, model_name=semantic_model_name)
-        return [pct_semantic * s + pct_lexical * l for s, l in zip(semantic, lexical)]
+        lexical_scores = lexical(query, chunks)
+        semantic_scores = semantic(query, chunks, model_name=semantic_model_name)
+        return [
+            pct_semantic * semantic_score + pct_lexical * lexical_score
+            for semantic_score, lexical_score in zip(semantic_scores, lexical_scores)
+        ]
 
     raise ValueError(f"Unknown utility method '{method}'")

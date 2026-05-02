@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+.env
+.venv/
+archive/
+analysis_outputs/*
+!analysis_outputs/chunk_utilities.csv
+.~lock.*#
+sentence_values.csv

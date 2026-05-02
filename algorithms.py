@@ -53,80 +53,187 @@ def solve_exact_dp(costs, utilities, budget):
     return selected
  
  
-def solve_greedy_ratio(costs, utilities, budget):
-    # order = sorted(
-    #     range(len(costs)),
-    #     key=lambda idx: (utilities[idx] / max(1, costs[idx]), utilities[idx]),
-    #     reverse=True,
-    # )
+def solve_greedy_ratio(costs, utility_scores, budget):
+    # Greedy Algorithm for 0-1 Knapsack - does not guarantee an optimal result
+    # input is an list of costs and a list of utlility score + overall budget ( cost cap )
+    # idx is the index value for the associate object
 
-    # selected = []
-    # remaining = budget
-    # value = 0.0
-    # for idx in order:
-    #     cost = costs[idx]
-    #     if cost <= remaining:
-    #         selected.append(idx)
-    #         remaining -= cost
-    #         value += utilities[idx]
+    # Sort chunks in order of best utility/cost ration
+    # lambda function determines next value by taking next highest utility/cost or taking the next highest utility if cost/utility is a tie
+    # max(1, costs [idx]) = prevents division by zero)
+
+    ordered_chunks = sorted(
+         range(len(costs)),
+         key=lambda idx: (utility_scores[idx] / max(1, costs[idx]), utility_scores[idx]),
+         reverse=True,
+    )
+
+    # initialize list of selected chunks, remaining_budget, and overall value
+    selected = []
+    remaining_budget = budget
+    value = 0.0
+
+    # review each chunk in descending order,
+    # if cost is less than or equal to the remaining budget, add to selected, decrease remaining budget by cost, and increase value by utility
+    # otherwise proceed to next chunk
+    for idx in ordered_chunks:
+        chunk_cost = costs[idx]
+        if chunk_cost <= remaining_budget:
+            selected.append(idx)
+            remaining_budget -= chunk_cost
+            value += utility_scores[idx]
     # return selected, value
-    pass
+    return selected
 
 
-def solve_greedy_refine(costs, utilities, budget, max_iterations=50, candidate_pool_size=300):
-    # initial_selected, _ = solve_greedy_ratio(costs, utilities, budget)
-    # selected = set(initial_selected)
+# -------------------------------------------------------------------------
+# Greedy Refine Algorithm: high-level overview
+#
+# Greedy ratio gives us a quick first answer, but sometimes it misses better
+# choices. Greedy refine starts with the greedy answer and then tries to improve
+# it using small local changes.
+#
+# The refinement idea is:
+# 1. Start with the chunks selected by solve_greedy_ratio.
+# 2. Try a swap:
+#    remove one selected chunk and add one unselected chunk.
+# 3. To keep this faster, do not try every possible swap.
+#    Instead:
+#    - only try adding strong unselected chunks
+#    - only try removing weak selected chunks
+# 4. After a swap, try to add one extra chunk if there is leftover room.
+# 5. Repeat this process a limited number of times.
+#
+# This is still much simpler than exact DP. It does not try all possible
+# combinations. It only tries small improvements to the greedy answer.
+# -------------------------------------------------------------------------
+def solve_greedy_refine(
+    costs,
+    utilities,
+    budget,
+    max_iterations=50,
+    candidate_pool_size=300,
+    remove_pool_size=100,
+):
+    """
+    Greedy refine algorithm.
 
-    # for _ in range(max_iterations):
-    #     improved = False
-    #     current_cost = sum(costs[idx] for idx in selected)
+    Start with the greedy answer. Then try to make it better by:
+    1. swapping one weak selected chunk for one strong unselected chunk
+    2. adding a chunk after a swap if extra room becomes available
+    """
+    # First get the starting solution from the greedy ratio algorithm.
+    # This gives us a reasonable answer to improve.
+    selected = solve_greedy_ratio(costs, utilities, budget)
 
-    #     remaining = budget - current_cost
-    #     best_add_idx = None
-    #     best_add_gain = 0.0
-    #     for idx in range(len(costs)):
-    #         if idx in selected:
-    #             continue
-    #         if costs[idx] <= remaining and utilities[idx] > best_add_gain:
-    #             best_add_gain = utilities[idx]
-    #             best_add_idx = idx
-    #     if best_add_idx is not None:
-    #         selected.add(best_add_idx)
-    #         improved = True
-    #         continue
+    # Try to improve the answer a limited number of times.
+    # max_iterations prevents the loop from running forever.
+    for _ in range(max_iterations):
+        # changed tells us whether this loop made the solution better.
+        # If nothing changes, we stop.
+        changed = False
 
-    #     unselected = [idx for idx in range(len(costs)) if idx not in selected]
-    #     unselected.sort(
-    #         key=lambda idx: (utilities[idx] / max(1, costs[idx]), utilities[idx]),
-    #         reverse=True,
-    #     )
-    #     candidate_unselected = unselected[:candidate_pool_size]
+        # Recalculate the current total cost of the selected chunks.
+        total_cost = 0
 
-    #     best_swap_in = None
-    #     best_swap_out = None
-    #     best_swap_gain = 0.0
-    #     for add_idx in candidate_unselected:
-    #         add_cost = costs[add_idx]
-    #         add_util = utilities[add_idx]
-    #         for rem_idx in selected:
-    #             new_cost = current_cost - costs[rem_idx] + add_cost
-    #             if new_cost > budget:
-    #                 continue
-    #             gain = add_util - utilities[rem_idx]
-    #             if gain > best_swap_gain + 1e-12:
-    #                 best_swap_gain = gain
-    #                 best_swap_in = add_idx
-    #                 best_swap_out = rem_idx
+        for i in selected:
+            total_cost += costs[i]
 
-    #     if best_swap_in is not None and best_swap_out is not None:
-    #         selected.remove(best_swap_out)
-    #         selected.add(best_swap_in)
-    #         improved = True
+        # Step 1: build a list of chunks that are NOT selected.
+        #
+        # These are the chunks we might want to add.
+        unselected = []
 
-    #     if not improved:
-    #         break
+        for i in range(len(costs)):
+            if i not in selected:
+                unselected.append(i)
 
-    # final_indices = sorted(selected)
-    # final_value = sum(utilities[idx] for idx in final_indices)
-    # return final_indices, final_value
-    pass
+        # Step 2: sort unselected chunks from strongest to weakest.
+        #
+        # A strong chunk has high utility per token.
+        # These are good candidates to add.
+        unselected.sort(key=lambda i: utilities[i] / costs[i], reverse=True)
+
+        # Only look at the top unselected chunks.
+        # This makes the algorithm faster than checking everything.
+        possible_adds = unselected[:candidate_pool_size]
+
+        # Step 3: sort selected chunks from weakest to strongest.
+        #
+        # A weak selected chunk has low utility per token.
+        # These are good candidates to remove.
+        possible_removes = selected.copy()
+        possible_removes.sort(key=lambda i: utilities[i] / costs[i])
+
+        # Only look at the weakest selected chunks.
+        possible_removes = possible_removes[:remove_pool_size]
+
+        # Step 4: try to find the best swap from these smaller lists.
+        #
+        # A swap means:
+        # - remove one chunk we already selected
+        # - add one chunk we did not select
+        #
+        # We only accept a swap if:
+        # - the new total cost is within the budget
+        # - the new chunk has more utility than the removed chunk
+        item_to_add = None
+        item_to_remove = None
+        best_gain = 0.0
+
+        # Try strong chunks as possible additions.
+        for add_i in possible_adds:
+            # Try weak chunks as possible removals.
+            for remove_i in possible_removes:
+                # This is what the total cost would be after the swap.
+                new_cost = total_cost - costs[remove_i] + costs[add_i]
+
+                # This is how much utility changes after the swap.
+                # Positive means the swap improves the solution.
+                gain = utilities[add_i] - utilities[remove_i]
+
+                # If this swap is the best improvement so far, remember it.
+                if new_cost <= budget and gain > best_gain:
+                    item_to_add = add_i
+                    item_to_remove = remove_i
+                    best_gain = gain
+
+        # If we found a valid improving swap, make the swap.
+        if item_to_add is not None:
+            selected.remove(item_to_remove)
+            selected.append(item_to_add)
+            changed = True
+
+        # Step 5: after a swap, we may have extra room.
+        #
+        # Now it makes sense to check whether another chunk can fit.
+        # We do this AFTER the swap, not before, because greedy already tried
+        # to add chunks during the first pass.
+        if changed:
+            total_cost = 0
+
+            for i in selected:
+                total_cost += costs[i]
+
+            best_extra_item = None
+            best_extra_utility = 0.0
+
+            for i in range(len(costs)):
+                if i in selected:
+                    continue
+
+                if total_cost + costs[i] <= budget and utilities[i] > best_extra_utility:
+                    best_extra_item = i
+                    best_extra_utility = utilities[i]
+
+            if best_extra_item is not None:
+                selected.append(best_extra_item)
+
+        # If we did not swap anything,
+        # there is no simple improvement left, so stop.
+        if not changed:
+            break
+
+    # Return selected chunks in original document order.
+    selected.sort()
+    return selected
